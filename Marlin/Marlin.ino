@@ -1,6 +1,6 @@
 /*==============================================================================
 
-  Marlin Firmware
+  S.L.O. Ver 1.0 Marlin Firmware
 
   (c) 2011-2020 MarlinFirmware
   Portions of Marlin are (c) by their respective authors.
@@ -22,12 +22,12 @@ Marlin Firmware Official Website
     The official Marlin Firmware website contains the most up-to-date
     documentation. Contributions are always welcome!
 
-Configuration
+Original Configuration
 
   - https://github.com/MarlinFirmware/Configurations
     Example configurations for several printer models.
 
-  - https://youtu.be/3gwWVFtdg-4
+  - https://www.youtube.com/watch?v=3gwWVFtdg-4
     A good 20-minute overview of Marlin configuration by Tom Sanladerer.
     (Applies to Marlin 1.0.x, so Jerk and Acceleration should be halved.)
     Also... https://www.google.com/search?tbs=vid%3A1&q=configure+marlin
@@ -53,5 +53,5 @@ Contributing
   - https://marlinfw.org/docs/development/coding_standards.html
     Before submitting code get to know the Coding Standards.
 
-
+Please reach out to Gabriel Peterman (gabepeterman10@yahoo.com) for more information on the current S.L.O. Ver. configuration
 ------------------------------------------------------------------------------*/
