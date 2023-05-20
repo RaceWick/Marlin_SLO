@@ -23,9 +23,6 @@
 
 //
 // FYSETC F6 1.3 (and 1.4) pin assignments
-// Schematic (1.3): https://green-candy.osdn.jp/external/MarlinFW/board_schematics/RAMPS/FYSETC%20F6%201.3/F6_V13.pdf
-// Origin: https://github.com/FYSETC/FYSETC-F6/blob/master/Hardware/V1.3/F6_V13.pdf
-// ATmega2560
 //
 
 #if NOT_TARGET(__AVR_ATmega2560__)
@@ -185,7 +182,7 @@
 #define HEATER_2_PIN                           7
 #define HEATER_BED_PIN                         8
 
-#define FAN0_PIN                              44
+#define FAN_PIN                               44
 #define FAN1_PIN                              45
 #define FAN2_PIN                              46
 
@@ -266,7 +263,7 @@
   #elif HAS_MARLINUI_U8GLIB || HAS_MARLINUI_HD44780
 
     #define LCD_PINS_RS                       16
-    #define LCD_PINS_EN                       17
+    #define LCD_PINS_ENABLE                   17
     #define LCD_PINS_D4                       23
     #define LCD_PINS_D5                       25
     #define LCD_PINS_D6                       27
