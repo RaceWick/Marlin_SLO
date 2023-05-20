@@ -19,43 +19,43 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  *
  */
-#pragma once
 
 /**
- * lcd/extui/anycubic_chiron/FileNavigator.h
+ * lcd/extui/anycubic_chiron/Tunes.cpp
  *
  * Extensible_UI implementation for Anycubic Chiron
  * Written By Nick Wells, 2020 [https://github.com/SwiftNick]
  *  (not affiliated with Anycubic, Ltd.)
  */
 
-#include "chiron_tft_defs.h"
-#include "../ui_api.h"
+/***********************************************************************
+ * A Utility to play tunes using the buzzer in the printer controller. *
+ * See Tunes.h for note and tune definitions.                          *
+ ***********************************************************************/
 
-using namespace ExtUI;
+#include "../../../inc/MarlinConfigPre.h"
+
+// TODO: Use Marlin's built-in tone player instead.
+
+#if ENABLED(ANYCUBIC_LCD_CHIRON)
+
+#include "Tunes.h"
+#include "../ui_api.h"
 
 namespace Anycubic {
 
-class FileNavigator {
-  public:
-    FileNavigator();
-    static void reset();
-    static void getFiles(uint16_t, panel_type_t, uint8_t filesneeded=4);
-    static void upDIR();
-    static void changeDIR(const char *);
-    static void sendFile(panel_type_t);
-    static void refresh();
-    static void skiptofileindex(uint16_t);
-
-    static FileList filelist;
-  private:
-    static uint16_t lastpanelindex;
-    static uint16_t currentindex;
-    static uint8_t  currentfolderdepth;
-    static uint16_t currentfolderindex[MAX_FOLDER_DEPTH];
-    static char     currentfoldername[MAX_PATH_LEN + 1];
-};
-
-extern FileNavigator filenavigator;
+  void PlayTune(uint8_t beeperPin, const uint16_t *tune, uint8_t speed=1) {
+    uint8_t pos = 1;
+    const uint16_t wholenotelen = tune[0] / speed;
+    do {
+      const uint16_t freq = tune[pos], notelen = wholenotelen / tune[pos + 1];
+      ::tone(beeperPin, freq, notelen);
+      ExtUI::delay_ms(notelen);
+      pos += 2;
+      if (pos >= MAX_TUNE_LENGTH) break;
+    } while (tune[pos] != n_END);
+  }
 
 }
+
+#endif // ANYCUBIC_LCD_CHIRON
