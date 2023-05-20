@@ -50,8 +50,6 @@
   #include "delta.h"
 #elif ENABLED(POLARGRAPH)
   #include "polargraph.h"
-#elif ENABLED(POLAR)
-  #include "polar.h"
 #endif
 
 #if ABL_PLANAR
@@ -80,12 +78,11 @@
 
 // Feedrate for manual moves
 #ifdef MANUAL_FEEDRATE
-  constexpr xyze_feedrate_t manual_feedrate_mm_m = MANUAL_FEEDRATE,
-                            manual_feedrate_mm_s = LOGICAL_AXIS_ARRAY(
-                              MMM_TO_MMS(manual_feedrate_mm_m.e),
-                              MMM_TO_MMS(manual_feedrate_mm_m.x), MMM_TO_MMS(manual_feedrate_mm_m.y), MMM_TO_MMS(manual_feedrate_mm_m.z),
-                              MMM_TO_MMS(manual_feedrate_mm_m.i), MMM_TO_MMS(manual_feedrate_mm_m.j), MMM_TO_MMS(manual_feedrate_mm_m.k),
-                              MMM_TO_MMS(manual_feedrate_mm_m.u), MMM_TO_MMS(manual_feedrate_mm_m.v), MMM_TO_MMS(manual_feedrate_mm_m.w));
+  constexpr xyze_feedrate_t _mf = MANUAL_FEEDRATE,
+           manual_feedrate_mm_s = LOGICAL_AXIS_ARRAY(_mf.e / 60.0f,
+                                                     _mf.x / 60.0f, _mf.y / 60.0f, _mf.z / 60.0f,
+                                                     _mf.i / 60.0f, _mf.j / 60.0f, _mf.k / 60.0f,
+                                                     _mf.u / 60.0f, _mf.v / 60.0f, _mf.w / 60.0f);
 #endif
 
 #if IS_KINEMATIC && HAS_JUNCTION_DEVIATION
@@ -159,14 +156,6 @@ typedef struct {
 
 } block_flags_t;
 
-#if ENABLED(AUTOTEMP)
-  typedef struct {
-    celsius_t min, max;
-    float factor;
-    bool enabled;
-  } autotemp_t;
-#endif
-
 #if ENABLED(LASER_FEATURE)
 
   typedef struct {
@@ -203,11 +192,11 @@ typedef struct PlannerBlock {
 
   volatile block_flags_t flag;              // Block flags
 
-  bool is_fan_sync() { return TERN0(LASER_SYNCHRONOUS_M106_M107, flag.sync_fans); }
-  bool is_pwr_sync() { return TERN0(LASER_POWER_SYNC, flag.sync_laser_pwr); }
-  bool is_sync() { return flag.sync_position || is_fan_sync() || is_pwr_sync(); }
-  bool is_page() { return TERN0(DIRECT_STEPPING, flag.page); }
-  bool is_move() { return !(is_sync() || is_page()); }
+  volatile bool is_fan_sync() { return TERN0(LASER_SYNCHRONOUS_M106_M107, flag.sync_fans); }
+  volatile bool is_pwr_sync() { return TERN0(LASER_POWER_SYNC, flag.sync_laser_pwr); }
+  volatile bool is_sync() { return flag.sync_position || is_fan_sync() || is_pwr_sync(); }
+  volatile bool is_page() { return TERN0(DIRECT_STEPPING, flag.page); }
+  volatile bool is_move() { return !(is_sync() || is_page()); }
 
   // Fields used by the motion planner to manage acceleration
   float nominal_speed,                      // The nominal speed for this block in (mm/sec)
@@ -246,7 +235,7 @@ typedef struct PlannerBlock {
     uint32_t acceleration_rate;             // The acceleration rate used for acceleration calculation
   #endif
 
-  AxisBits direction_bits;                  // Direction bits set for this block, where 1 is negative motion
+  axis_bits_t direction_bits;               // The direction bit set for this block (refers to *_DIRECTION_BIT in config.h)
 
   // Advance extrusion
   #if ENABLED(LIN_ADVANCE)
@@ -294,7 +283,7 @@ typedef struct PlannerBlock {
 
 } block_t;
 
-#if ANY(LIN_ADVANCE, FEEDRATE_SCALING, GRADIENT_MIX, LCD_SHOW_E_TOTAL, POWER_LOSS_RECOVERY)
+#if ANY(LIN_ADVANCE, SCARA_FEEDRATE_SCALING, GRADIENT_MIX, LCD_SHOW_E_TOTAL, POWER_LOSS_RECOVERY)
   #define HAS_POSITION_FLOAT 1
 #endif
 
@@ -337,24 +326,28 @@ typedef struct {
   };
 #endif
 
-#if ENABLED(SKEW_CORRECTION)
-  typedef struct {
-    #if ENABLED(SKEW_CORRECTION_GCODE)
-      float xy;
-      #if ENABLED(SKEW_CORRECTION_FOR_Z)
-        float xz, yz;
-      #else
-        const float xz = XZ_SKEW_FACTOR, yz = YZ_SKEW_FACTOR;
-      #endif
-    #else
-      const float xy = XY_SKEW_FACTOR,
-                  xz = XZ_SKEW_FACTOR, yz = YZ_SKEW_FACTOR;
-    #endif
-  } skew_factor_t;
+#if DISABLED(SKEW_CORRECTION)
+  #define XY_SKEW_FACTOR 0
+  #define XZ_SKEW_FACTOR 0
+  #define YZ_SKEW_FACTOR 0
 #endif
 
-#if ENABLED(DISABLE_OTHER_EXTRUDERS)
-  typedef uvalue_t(BLOCK_BUFFER_SIZE * 2) last_move_t;
+typedef struct {
+  #if ENABLED(SKEW_CORRECTION_GCODE)
+    float xy;
+    #if ENABLED(SKEW_CORRECTION_FOR_Z)
+      float xz, yz;
+    #else
+      const float xz = XZ_SKEW_FACTOR, yz = YZ_SKEW_FACTOR;
+    #endif
+  #else
+    const float xy = XY_SKEW_FACTOR,
+                xz = XZ_SKEW_FACTOR, yz = YZ_SKEW_FACTOR;
+  #endif
+} skew_factor_t;
+
+#if ENABLED(DISABLE_INACTIVE_EXTRUDER)
+  typedef IF<(BLOCK_BUFFER_SIZE > 64), uint16_t, uint8_t>::type last_move_t;
 #endif
 
 #if ENABLED(ARC_SUPPORT)
@@ -364,7 +357,7 @@ typedef struct {
 
 struct PlannerHints {
   float millimeters = 0.0;            // Move Length, if known, else 0.
-  #if ENABLED(FEEDRATE_SCALING)
+  #if ENABLED(SCARA_FEEDRATE_SCALING)
     float inv_duration = 0.0;         // Reciprocal of the move duration, if known
   #endif
   #if ENABLED(HINTS_CURVE_RADIUS)
@@ -378,11 +371,6 @@ struct PlannerHints {
                                       // would calculate if it knew the as-yet-unbuffered path
   #endif
 
-  #if HAS_ROTATIONAL_AXES
-    bool cartesian_move = true;       // True if linear motion of the tool centerpoint relative to the workpiece occurs.
-                                      // False if no movement of the tool center point relative to the work piece occurs
-                                      // (i.e. the tool rotates around the tool centerpoint)
-  #endif
   PlannerHints(const_float_t mm=0.0f) : millimeters(mm) {}
 };
 
@@ -417,7 +405,7 @@ class Planner {
 
     #if ENABLED(DIRECT_STEPPING)
       static uint32_t last_page_step_rate;          // Last page step rate given
-      static AxisBits last_page_dir;                // Last page direction given, where 1 represents forward or positive motion
+      static xyze_bool_t last_page_dir;             // Last page direction given
     #endif
 
     #if HAS_EXTRUDERS
@@ -471,7 +459,7 @@ class Planner {
     #endif
 
     #if ENABLED(LIN_ADVANCE)
-      static float extruder_advance_K[DISTINCT_E];
+      static float extruder_advance_K[EXTRUDERS];
     #endif
 
     /**
@@ -488,9 +476,7 @@ class Planner {
       static xyze_pos_t position_cart;
     #endif
 
-    #if ENABLED(SKEW_CORRECTION)
-      static skew_factor_t skew_factor;
-    #endif
+    static skew_factor_t skew_factor;
 
     #if ENABLED(SD_ABORT_ON_ENDSTOP_HIT)
       static bool abort_on_endstop_hit;
@@ -511,10 +497,6 @@ class Planner {
         xy_freq_limit_hz = constrain(hz, 0, 100);
         refresh_frequency_limit();
       }
-    #endif
-
-    #if ENABLED(FT_MOTION)
-      static bool fxdTiCtrl_busy;
     #endif
 
   private:
@@ -538,9 +520,9 @@ class Planner {
       static float last_fade_z;
     #endif
 
-    #if ENABLED(DISABLE_OTHER_EXTRUDERS)
+    #if ENABLED(DISABLE_INACTIVE_EXTRUDER)
       // Counters to manage disabling inactive extruder steppers
-      static last_move_t extruder_last_move[E_STEPPERS];
+      static last_move_t g_uc_extruder_last_move[E_STEPPERS];
     #endif
 
     #if HAS_WIRED_LCD
@@ -925,8 +907,8 @@ class Planner {
       return out;
     }
 
-    // SCARA AB and Polar YB axes are in degrees, not mm
-    #if EITHER(IS_SCARA, POLAR)
+    // SCARA AB axes are in degrees, not mm
+    #if IS_SCARA
       FORCE_INLINE static float get_axis_position_degrees(const AxisEnum axis) { return get_axis_position_mm(axis); }
     #endif
 
@@ -948,7 +930,11 @@ class Planner {
     static float triggered_position_mm(const AxisEnum axis);
 
     // Blocks are queued, or we're running out moves, or the closed loop controller is waiting
-    static bool busy();
+    static bool busy() {
+      return (has_blocks_queued() || cleaning_buffer_counter
+          || TERN0(EXTERNAL_CLOSED_LOOP_CONTROLLER, CLOSED_LOOP_WAITING())
+      );
+    }
 
     // Block until all buffered steps are executed / cleaned
     static void synchronize();
@@ -990,7 +976,9 @@ class Planner {
     #endif
 
     #if ENABLED(AUTOTEMP)
-      static autotemp_t autotemp;
+      static celsius_t autotemp_min, autotemp_max;
+      static float autotemp_factor;
+      static bool autotemp_enabled;
       static void autotemp_update();
       static void autotemp_M104_M109();
       static void autotemp_task();
@@ -1000,7 +988,7 @@ class Planner {
       FORCE_INLINE static void recalculate_max_e_jerk() {
         const float prop = junction_deviation_mm * SQRT(0.5) / (1.0f - SQRT(0.5));
         EXTRUDER_LOOP()
-          max_e_jerk[E_INDEX_N(e)] = SQRT(prop * settings.max_acceleration_mm_per_s2[E_AXIS_N(e)]);
+          max_e_jerk[E_INDEX_N(e)] = SQRT(prop * settings.max_acceleration_mm_per_s2[E_INDEX_N(e)]);
       }
     #endif
 

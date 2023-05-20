@@ -1,9 +1,9 @@
 /**
  * Marlin 3D Printer Firmware
- * Copyright (c) 2022 MarlinFirmware [https://github.com/MarlinFirmware/Marlin]
+ * Copyright (C) 2022 MarlinFirmware [https://github.com/MarlinFirmware/Marlin]
  *
  * Based on Sprinter and grbl.
- * Copyright (c) 2011 Camiel Gubbels / Erik van der Zalm
+ * Copyright (C) 2011 Camiel Gubbels / Erik van der Zalm
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,7 +16,7 @@
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
 #pragma once
@@ -75,19 +75,20 @@ constexpr temp_entry_t temptable_504[] PROGMEM = {
   { OV( 830),  65 },
   { OV( 857),  60 },
   { OV( 881),  55 },
-  { OV( 903),  50 },
-  { OV( 922),  45 },
-  { OV( 939),  40 },
-  { OV( 954),  35 },
-  { OV( 966),  30 },
-  { OV( 977),  25 },
-  { OV( 985),  23 },
-  { OV( 993),  20 },
-  { OV( 999),  18 },
-  { OV(1004),  15 },
-  { OV(1008),  12 },
-  { OV(1012),   8 },
-  { OV(1016),   5 },
+  { OV( 895),  49 }, //original 903 50
+  { OV( 937),  45 }, //original 922
+  { OV( 954),  39 }, //original 939 40
+  { OV( 959),  37 }, //original 954 35
+  { OV( 965),  33 }, //entire new line
+  { OV( 974),  29 }, //original 966 30
+  //{ OV( 977),  25 },
+  { OV( 989),  22 }, //original 985 23
+  //{ OV( 993),  20 },
+  //{ OV( 999),  18 },
+  //{ OV(1004),  15 },
+  { OV(1003),  12 },//original 1008
+  //{ OV(1012),   8 },
+  { OV(1009),   5 }, //original 1016
   { OV(1020),   0 },
   { OV(1023),  -5 }
 };
