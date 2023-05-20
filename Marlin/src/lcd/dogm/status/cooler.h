@@ -27,6 +27,7 @@
 #if HAS_COOLER
 
   #define STATUS_COOLER_WIDTH 22
+  #define STATUS_COOLER_X     80
 
   const unsigned char status_cooler_bmp2[] PROGMEM = {
     B00000001,B00000000,B10000000,
