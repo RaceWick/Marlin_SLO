@@ -36,11 +36,10 @@
 #include <lvgl.h>
 
 #include "../../../MarlinCore.h"
-#include "../../marlinui.h"
-
 #include "../../../inc/MarlinConfig.h"
 
-#include HAL_PATH(../../.., tft/xpt2046.h)
+#include HAL_PATH(../../../HAL, tft/xpt2046.h)
+#include "../../marlinui.h"
 XPT2046 touch;
 
 #if ENABLED(POWER_LOSS_RECOVERY)
@@ -79,7 +78,7 @@ XPT2046 touch;
 
 static lv_disp_buf_t disp_buf;
 lv_group_t*  g;
-#if HAS_MEDIA
+#if ENABLED(SDSUPPORT)
   void UpdateAssets();
 #endif
 uint16_t DeviceCode = 0x9488;
@@ -154,7 +153,7 @@ void tft_lvgl_init() {
 
   hal.watchdog_refresh();     // LVGL init takes time
 
-  #if HAS_MEDIA
+  #if ENABLED(SDSUPPORT)
     UpdateAssets();
     hal.watchdog_refresh();   // LVGL init takes time
     TERN_(MKS_TEST, mks_test_get());
@@ -247,7 +246,7 @@ void tft_lvgl_init() {
 
   if (ready) lv_draw_ready_print();
 
-  #if BOTH(MKS_TEST, HAS_MEDIA)
+  #if BOTH(MKS_TEST, SDSUPPORT)
     if (mks_test_flag == 0x1E) mks_gpio_test();
   #endif
 }
@@ -299,8 +298,10 @@ void lv_fill_rect(lv_coord_t x1, lv_coord_t y1, lv_coord_t x2, lv_coord_t y2, lv
   W25QXX.init(SPI_QUARTER_SPEED);
 }
 
-uint16_t getTickDiff(const uint16_t curTick, const uint16_t lastTick) {
-  return (TICK_CYCLE) * (lastTick <= curTick ? (curTick - lastTick) : (0xFFFFFFFF - lastTick + curTick));
+#define TICK_CYCLE 1
+
+unsigned int getTickDiff(unsigned int curTick, unsigned int lastTick) {
+  return TICK_CYCLE * (lastTick <= curTick ? (curTick - lastTick) : (0xFFFFFFFF - lastTick + curTick));
 }
 
 static bool get_point(int16_t *x, int16_t *y) {
@@ -481,19 +482,18 @@ void lv_encoder_pin_init() {
   #if BUTTON_EXISTS(UP)
     SET_INPUT(BTN_UP);
   #endif
-  #if BUTTON_EXISTS(DOWN)
-    SET_INPUT(BTN_DOWN);
+  #if BUTTON_EXISTS(DWN)
+    SET_INPUT(BTN_DWN);
   #endif
-  #if BUTTON_EXISTS(LEFT)
-    SET_INPUT(BTN_LEFT);
+  #if BUTTON_EXISTS(LFT)
+    SET_INPUT(BTN_LFT);
   #endif
-  #if BUTTON_EXISTS(RIGHT)
-    SET_INPUT(BTN_RIGHT);
+  #if BUTTON_EXISTS(RT)
+    SET_INPUT(BTN_RT);
   #endif
 }
 
 #if 1 // HAS_ENCODER_ACTION
-
   void lv_update_encoder() {
     static uint32_t encoder_time1;
     uint32_t tmpTime, diffTime = 0;
@@ -554,7 +554,7 @@ void lv_encoder_pin_init() {
 
       #endif // HAS_ENCODER_WHEEL
 
-    } // encoder_time1
+    } // next_button_update_ms
   }
 
 #endif // HAS_ENCODER_ACTION
