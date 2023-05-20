@@ -22,7 +22,7 @@
 
 #include "../../inc/MarlinConfig.h"
 
-#if HAS_MEDIA
+#if ENABLED(SDSUPPORT)
 
 #include "../gcode.h"
 #include "../../sd/cardreader.h"
@@ -38,7 +38,7 @@ void GcodeSuite::M23() {
   for (char *fn = parser.string_arg; *fn; ++fn) if (*fn == ' ') *fn = '\0';
   card.openFileRead(parser.string_arg);
 
-  TERN_(SET_PROGRESS_PERCENT, ui.set_progress(0));
+  TERN_(LCD_SET_PROGRESS_MANUALLY, ui.set_progress(0));
 }
 
-#endif // HAS_MEDIA
+#endif // SDSUPPORT
